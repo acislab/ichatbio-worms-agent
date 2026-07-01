@@ -6,12 +6,12 @@ readme = "README.md"
 requires-python = ">=3.12"
 
 dependencies = [
-    "pydantic==2.11.7",
-    "httpx==0.28.1",
-    "openai==1.97.1",
-    "python-dotenv==1.1.1",
-    "ichatbio-sdk==0.2.2",
-    "instructor==1.10.0",
+    "pydantic>=2.13.4",
+    "httpx>=0.28.1",
+    "openai>=1.109.1",
+    "python-dotenv>=1.2.2",
+    "ichatbio-sdk==0.2.8",
+    "instructor>=1.15.1",
     "typing_extensions",
     "requests",
     "cloudscraper",

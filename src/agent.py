@@ -1,4 +1,4 @@
-from typing import override, Optional, Literal
+from typing import Any, override, Optional, Literal
 from pydantic import BaseModel, Field
 from ichatbio.agent import IChatBioAgent
 from ichatbio.agent_response import ResponseContext
@@ -11,11 +11,13 @@ from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 import dotenv
 import asyncio
+import os
 from functools import lru_cache
 
 from src.worms_api import WoRMS, MatchNamesParams
 from src.logging import log_species_not_found
 from src.tools import create_worms_tools
+from src.util import get_llm_client_kwargs, update_llm_credentials
 
 dotenv.load_dotenv()
 
@@ -111,7 +113,13 @@ Species mentioned: {species}
 Create the execution plan.""")
         ])
         
-        llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+        llm_kwargs = get_llm_client_kwargs()
+        llm = ChatOpenAI(
+            model=os.getenv("LLM", "gpt-4.1-unfiltered"),
+            temperature=0,
+            openai_api_key=llm_kwargs["api_key"],
+            openai_api_base=llm_kwargs["base_url"],
+        )
         chain = prompt | llm | parser
         
         try:
@@ -210,7 +218,15 @@ Create the execution plan.""")
         return aphia_id
     
     @override
-    async def run(self, context: ResponseContext, request: str, entrypoint: str, params: MarineResearchParams):
+    async def run(
+        self,
+        context: ResponseContext,
+        request: str,
+        entrypoint: str,
+        params: MarineResearchParams,
+        metadata: dict[str, Any] | None = None,
+    ):
+        update_llm_credentials(metadata)
         async with context.begin_process("Searching WoRMS") as process:
             plan = await self._create_plan(request, params.species_names)
             
@@ -253,7 +269,12 @@ Create the execution plan.""")
             get_cached_aphia_id_func=self._get_cached_aphia_id
         )
         
-        llm = ChatOpenAI(model="gpt-4o-mini")
+        llm_kwargs = get_llm_client_kwargs()
+        llm = ChatOpenAI(
+            model=os.getenv("LLM", "gpt-4.1-unfiltered"),
+            openai_api_key=llm_kwargs["api_key"],
+            openai_api_base=llm_kwargs["base_url"],
+        )
         system_prompt = self._make_system_prompt_with_plan(request, plan)
         agent = create_react_agent(llm, tools)
         
